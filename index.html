@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador NASA 1962 - Métodos Numéricos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
+        input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #0056b3; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+        button:hover { background-color: #004494; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+        th { background-color: #f8f9fa; }
+        .charts-container { display: flex; flex-direction: column; gap: 30px; margin-top: 30px; }
+        canvas { max-width: 100%; height: 350px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Simulador de Despegue (Euler, Heun y RK4)</h2>
+    <div class="grid">
+        <div><label>Masa (kg):</label><input type="number" id="m" value="1000"></div>
+        <div><label>Empuje (N):</label><input type="number" id="T" value="15000"></div>
+        <div><label>Gravedad (m/s²):</label><input type="number" id="g" value="9.81" step="0.01"></div>
+        <div><label>Resistencia k (kg/s):</label><input type="number" id="k" value="100"></div>
+        <div><label>Paso h (s):</label><input type="number" id="h" value="2" step="0.1"></div>
+        <div><label>Tiempo total (s):</label><input type="number" id="tMax" value="20"></div>
+    </div>
+    <button onclick="simular()">Ejecutar Simulación Numérica</button>
+
+    <div class="charts-container">
+        <div>
+            <h3>Velocidad vs Tiempo (Comparativa de Métodos)</h3>
+            <canvas id="chartVel"></canvas>
+        </div>
+    </div>
+
+    <h3>Tabla de Iteraciones de Velocidad (m/s) y Errores Absolutos</h3>
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>t (s)</th>
+                <th>Euler</th>
+                <th>Error Euler</th>
+                <th>Heun</th>
+                <th>Error Heun</th>
+                <th>RK4</th>
+                <th>Error RK4</th>
+                <th>Analítica (Exacta)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+    let velChart;
+
+    function f(v, A, B) {
+        return A - B * v;
+    }
+
+    function simular() {
+        const m = parseFloat(document.getElementById('m').value);
+        const T = parseFloat(document.getElementById('T').value);
+        const g = parseFloat(document.getElementById('g').value);
+        const k = parseFloat(document.getElementById('k').value);
+        const h = parseFloat(document.getElementById('h').value);
+        const tMax = parseFloat(document.getElementById('tMax').value);
+
+        const A = (T / m) - g; 
+        const B = k / m;       
+
+        let tArr = [], vEulerArr = [], vHeunArr = [], vRK4Arr = [], vExactArr = [];
+        let tbody = document.querySelector('#resultsTable tbody');
+        tbody.innerHTML = '';
+
+        let vEuler = 0, vHeun = 0, vRK4 = 0;
+
+        for (let t = 0; t <= tMax; t += h) {
+            let vExact = t === 0 ? 0 : (A / B) * (1 - Math.exp(-B * t));
+            
+            if (t === 0) { vEuler = 0; vHeun = 0; vRK4 = 0; }
+
+            
+            tArr.push(t.toFixed(2));
+            vEulerArr.push(vEuler);
+            vHeunArr.push(vHeun);
+            vRK4Arr.push(vRK4);
+            vExactArr.push(vExact);
+
+            let errE = Math.abs(vExact - vEuler);
+            let errH = Math.abs(vExact - vHeun);
+            let errR = Math.abs(vExact - vRK4);
+
+            tbody.innerHTML += `<tr>
+                <td>${t.toFixed(2)}</td>
+                <td>${vEuler.toFixed(4)}</td>
+                <td>${errE.toFixed(4)}</td>
+                <td>${vHeun.toFixed(4)}</td>
+                <td>${errH.toFixed(4)}</td>
+                <td>${vRK4.toFixed(4)}</td>
+                <td>${errR.toFixed(4)}</td>
+                <td style="font-weight:bold;">${vExact.toFixed(4)}</td>
+            </tr>`;
+
+            
+            vEuler = vEuler + h * f(vEuler, A, B);
+
+            
+            let k1_h = f(vHeun, A, B);
+            let k2_h = f(vHeun + h * k1_h, A, B);
+            vHeun = vHeun + (h / 2) * (k1_h + k2_h);
+
+            
+            let k1 = f(vRK4, A, B);
+            let k2 = f(vRK4 + 0.5 * h * k1, A, B);
+            let k3 = f(vRK4 + 0.5 * h * k2, A, B);
+            let k4 = f(vRK4 + h * k3, A, B);
+            vRK4 = vRK4 + (h / 6) * (k1 + 2*k2 + 2*k3 + k4);
+        }
+
+        if(velChart) velChart.destroy();
+        const ctxV = document.getElementById('chartVel').getContext('2d');
+        velChart = new Chart(ctxV, {
+            type: 'line',
+            data: {
+                labels: tArr,
+                datasets: [
+                    { label: 'Euler', data: vEulerArr, borderColor: '#ff6384', fill: false, tension: 0.1 },
+                    { label: 'Heun', data: vHeunArr, borderColor: '#ff9f40', fill: false, tension: 0.1 },
+                    { label: 'RK4', data: vRK4Arr, borderColor: '#4bc0c0', fill: false, tension: 0.1 },
+                    { label: 'Analítica', data: vExactArr, borderColor: '#36a2eb', borderDash: [5,5], fill: false, tension: 0.1 }
+                ]
+            }
+        });
+    }
+
+    window.onload = simular;
+</script>
+</body>
+</html>
