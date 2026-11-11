@@ -34,12 +34,6 @@ Donde:
 *   **JavaScript (Vanilla):** Lógica matemática y métodos iterativos.
 *   **Chart.js:** Librería para la renderización de las gráficas comparativas.
 
-## 🚀 Cómo ejecutar el proyecto
-
-1.  Clona este repositorio o descarga los archivos.
-2.  Abre el archivo `index.html` directamente en cualquier navegador web (Chrome, Firefox, Edge, etc.).
-3.  *Opcional:* Puedes ver la versión en vivo alojada en GitHub Pages haciendo clic en el enlace del panel lateral derecho (sección "Environments").
-
 ## 👨‍💻 Autor
 
-*   **Rodrigo Borras Anze** - *Desarrollo de simulación numérica*
+*   **Rodrigo Borras Anze** 
